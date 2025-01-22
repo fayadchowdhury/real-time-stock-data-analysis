@@ -1,0 +1,21 @@
+[project]
+name = "real-time-stock-data-analysis"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "Ahmad Al Fayad Chowdhury",email = "fayad.chowdhury@gmail.com"}
+]
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "notebook (>=7.3.2,<8.0.0)",
+    "pandas (>=2.2.3,<3.0.0)",
+    "kafka-python-ng (>=2.2.3,<3.0.0)",
+    "s3fs (>=2024.12.0,<2025.0.0)",
+    "python-dotenv (>=1.0.1,<2.0.0)"
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
