@@ -37,6 +37,7 @@ def filter_stock_data(symbols: list) -> pd.DataFrame:
 
         if data is not None and not data.empty:
             last_fetched = data["Timestamp"].max()
+            logger.debug(f"Data last fetched at {last_fetched}")
             return data
         else:
             logger.debug(f"No new data to pull")

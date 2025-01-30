@@ -31,7 +31,7 @@ def producer_task():
         else:
             logger.debug(f"No new data to produce")
 
-        time.sleep(10)
+        time.sleep(3600) # Change to 1 hour pulls
 
 
 def consumer_task():
