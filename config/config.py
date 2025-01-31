@@ -28,14 +28,3 @@ class KafkaConfig:
             "server_port": self.KAFKA_SERVER_PORT,
             "topic": self.KAFKA_TOPIC
         }
-    
-# class APIConfig:
-#     def __init__(self):
-#         self.base_url = os.getenv("ALPHA_VANTAGE_BASE_URL")
-#         self.api_key = os.getenv("ALPHA_VANTAGE_API_KEY")
-
-#     def config_dict(self):
-#         return {
-#             "base_url": self.base_url,
-#             "api_key": self.api_key
-#         }
