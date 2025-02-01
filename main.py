@@ -37,7 +37,7 @@ def producer_task():
             for _, record in data.iterrows():
                 record_dict = record.to_dict()
                 producer.send(kafka_config["topic"], value=record_dict)
-                logger.debug(f"Produced record => {record_dict["Timestamp"]} {record_dict["Symbol"]}:: Open: {record_dict["Open"]}, Low: {record_dict["Low"]}, High: {record_dict["High"]}, Close: {record_dict["Close"]}, Volume: {record_dict["Volume"]}")
+                logger.debug(f"Produced record => {record_dict['Timestamp']} {record_dict['Symbol']}:: Open: {record_dict['Open']}, Low: {record_dict['Low']}, High: {record_dict['High']}, Close: {record_dict['Close']}, Volume: {record_dict['Volume']}")
                 producer_queue.put(record.to_dict())
         else:
             logger.debug(f"No new data to produce")
