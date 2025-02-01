@@ -9,6 +9,7 @@ import threading
 import logging
 from config.logging import setup_logging
 import queue
+from logs.logs_parser import parse_log
 
 import pandas as pd
 
@@ -34,8 +35,9 @@ def producer_task():
         
         if data is not None and not data.empty:
             for _, record in data.iterrows():
-                producer.send(kafka_config["topic"], value=record.to_dict())
-                logger.debug(f"Produced record:\n{record.to_dict()}")
+                record_dict = record.to_dict()
+                producer.send(kafka_config["topic"], value=record_dict)
+                logger.debug(f"Produced record => {record_dict["Timestamp"]} {record_dict["Symbol"]}:: Open: {record_dict["Open"]}, Low: {record_dict["Low"]}, High: {record_dict["High"]}, Close: {record_dict["Close"]}, Volume: {record_dict["Volume"]}")
                 producer_queue.put(record.to_dict())
         else:
             logger.debug(f"No new data to produce")
@@ -77,37 +79,78 @@ if __name__ == "__main__":
     producer_data_list = []
     consumer_data_list = []
 
-    cols = st.columns(2)
-    producer_health_placeholder = cols[0].empty()
-    producer_placeholder = cols[0].empty()
-    consumer_health_placeholder = cols[1].empty()
-    consumer_placeholder = cols[1].empty()
+    row1_cols = st.columns(2)
+    producer_health_placeholder = row1_cols[0].empty()
+    producer_placeholder = row1_cols[0].empty()
+    consumer_health_placeholder = row1_cols[1].empty()
+    consumer_placeholder = row1_cols[1].empty()
+
+    row2_cols = st.columns(2)
+    row2_cols[0].subheader("Pull Log Last")
+    pull_log = row2_cols[0].empty()
+    row2_cols[0].subheader("Producer Log Last")
+    producer_log = row2_cols[0].empty()
+    row2_cols[1].subheader("Push Log Last")
+    push_log = row2_cols[1].empty()
+    row2_cols[1].subheader("Consumer Log Last")
+    consumer_log = row2_cols[1].empty()
+
 
     # Keep the main thread alive
     try:
         while True:
             while not producer_queue.empty():
                 producer_data_list.append(producer_queue.get())
-            
+
             while not consumer_queue.empty():
                 consumer_data_list.append(consumer_queue.get())
 
             if producer_data_list:
-                producer_health_placeholder.text(f"Producer running healthy")
+                producer_health_placeholder.subheader(f"Producer running healthy")
                 producer_df = pd.DataFrame(producer_data_list)
                 producer_placeholder.dataframe(producer_df)
             else:
-                producer_health_placeholder.text(f"Producer may have issues")
+                producer_health_placeholder.subheader(f"Producer may have issues")
                 producer_placeholder.text("Waiting for new data")
             
             if consumer_data_list:
-                consumer_health_placeholder.text(f"Consumer running healthy")
+                consumer_health_placeholder.subheader(f"Consumer running healthy")
                 consumer_df = pd.DataFrame(consumer_data_list)
                 consumer_placeholder.dataframe(consumer_df)
             else:
-                consumer_health_placeholder.text(f"Consumer may have issues")
+                consumer_health_placeholder.subheader(f"Consumer may have issues")
                 consumer_placeholder.text("Waiting for new data")
 
-            time.sleep(1)
+            with open("logs/pull.log", "r") as f:
+                lines = f.readlines()
+                if lines:
+                    last_line = lines[-1]
+                    parsed_last_line = parse_log(last_line)
+                    pull_log.write(f"{parsed_last_line["timestamp"]}: {parsed_last_line["message"]}")
+
+            with open("logs/push.log", "r") as f:
+                lines = f.readlines()
+                if lines:
+                    last_line = lines[-1]
+                    parsed_last_line = parse_log(last_line)
+                    push_log.write(f"{parsed_last_line["timestamp"]}: {parsed_last_line["message"]}")
+                
+            with open("logs/consumer.log", "r") as f:
+                lines = f.readlines()
+                if lines:
+                    last_line = lines[-1]
+                    parsed_last_line = parse_log(last_line)
+                    consumer_log.write(f"{parsed_last_line["timestamp"]}: {parsed_last_line["message"]}")
+
+            with open("logs/producer.log", "r") as f:
+                lines = f.readlines()
+                if lines:
+                    last_line = lines[-1]
+                    parsed_last_line = parse_log(last_line)
+                    producer_log.write(f"{parsed_last_line["timestamp"]}: {parsed_last_line["message"]}")
+
+            time.sleep(5)
     except KeyboardInterrupt:
         logger.debug("Shutting down...")
+    except Exception as e:
+        logger.error(e)
