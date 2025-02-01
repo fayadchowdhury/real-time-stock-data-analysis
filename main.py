@@ -20,7 +20,10 @@ setup_logging()
 producer_queue = queue.Queue()
 consumer_queue = queue.Queue()
 
+last_fetched_time = None
+
 def producer_task():
+    global last_fetched_time
     logger = logging.getLogger("producer")
     # Get configs
     kafka_config = KafkaConfig().config_dict()
@@ -31,7 +34,12 @@ def producer_task():
     while True:
         # Get data from API
         symbols = ["AAPL", "GOOGL", "MSFT"]
-        data = filter_stock_data(symbols)
+        filtered = filter_stock_data(symbols)
+        if filtered is not None:
+            data, last_fetched_time = filtered
+            logger.debug(f"last_fetched_time = {last_fetched_time}")
+        else:
+            data = filtered
         
         if data is not None and not data.empty:
             for _, record in data.iterrows():
@@ -75,6 +83,7 @@ if __name__ == "__main__":
     
     # Also serve UI from this
     st.title("📈 Real-time Stock Data Healthcheck")
+    last_fetched_time_placeholder = st.empty()
 
     producer_data_list = []
     consumer_data_list = []
@@ -99,6 +108,9 @@ if __name__ == "__main__":
     # Keep the main thread alive
     try:
         while True:
+            if last_fetched_time is not None:
+                last_fetched_time_placeholder.subheader(f"Data last fetched at {last_fetched_time}")
+
             while not producer_queue.empty():
                 producer_data_list.append(producer_queue.get())
 
@@ -149,7 +161,7 @@ if __name__ == "__main__":
                     parsed_last_line = parse_log(last_line)
                     producer_log.write(f"{parsed_last_line['timestamp']}: {parsed_last_line['message']}")
 
-            time.sleep(5)
+            time.sleep(1) # Update UI every second
     except KeyboardInterrupt:
         logger.debug("Shutting down...")
     except Exception as e:

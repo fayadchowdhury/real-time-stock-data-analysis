@@ -28,18 +28,20 @@ def fetch_hourly_ticker_data(symbols: list) -> pd.DataFrame:
         logger.error(e)
         return None
 
-def filter_stock_data(symbols: list) -> pd.DataFrame:
+def filter_stock_data(symbols: list) -> tuple:
     logger = logging.getLogger("pull")
     global last_fetched
     try:
         data = fetch_hourly_ticker_data(symbols)
         if last_fetched:
             data = data[data["Timestamp"] > last_fetched]
+        else:
+            logger.debug(f"No last_fetched; possibly a new run")
 
         if data is not None and not data.empty:
             last_fetched = data["Timestamp"].max()
             logger.debug(f"Data last fetched at {last_fetched}")
-            return data
+            return data, last_fetched
         else:
             logger.debug(f"No new data to pull")
     except Exception as e:
