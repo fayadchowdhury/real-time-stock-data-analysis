@@ -126,28 +126,28 @@ if __name__ == "__main__":
                 if lines:
                     last_line = lines[-1]
                     parsed_last_line = parse_log(last_line)
-                    pull_log.write(f"{parsed_last_line["timestamp"]}: {parsed_last_line["message"]}")
+                    pull_log.write(f"{parsed_last_line['timestamp']}: {parsed_last_line['message']}")
 
             with open("logs/push.log", "r") as f:
                 lines = f.readlines()
                 if lines:
                     last_line = lines[-1]
                     parsed_last_line = parse_log(last_line)
-                    push_log.write(f"{parsed_last_line["timestamp"]}: {parsed_last_line["message"]}")
+                    push_log.write(f"{parsed_last_line['timestamp']}: {parsed_last_line['message']}")
                 
             with open("logs/consumer.log", "r") as f:
                 lines = f.readlines()
                 if lines:
                     last_line = lines[-1]
                     parsed_last_line = parse_log(last_line)
-                    consumer_log.write(f"{parsed_last_line["timestamp"]}: {parsed_last_line["message"]}")
+                    consumer_log.write(f"{parsed_last_line['timestamp']}: {parsed_last_line['message']}")
 
             with open("logs/producer.log", "r") as f:
                 lines = f.readlines()
                 if lines:
                     last_line = lines[-1]
                     parsed_last_line = parse_log(last_line)
-                    producer_log.write(f"{parsed_last_line["timestamp"]}: {parsed_last_line["message"]}")
+                    producer_log.write(f"{parsed_last_line['timestamp']}: {parsed_last_line['message']}")
 
             time.sleep(5)
     except KeyboardInterrupt:
