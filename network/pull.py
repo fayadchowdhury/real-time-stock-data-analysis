@@ -28,9 +28,8 @@ def fetch_hourly_ticker_data(symbols: list) -> pd.DataFrame:
         logger.error(e)
         return None
 
-def filter_stock_data(symbols: list) -> tuple:
+def filter_stock_data(symbols: list, last_fetched) -> tuple:
     logger = logging.getLogger("pull")
-    global last_fetched
     try:
         data = fetch_hourly_ticker_data(symbols)
         if last_fetched:

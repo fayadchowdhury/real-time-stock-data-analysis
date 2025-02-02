@@ -17,66 +17,84 @@ import streamlit as st
 
 setup_logging()
 
-producer_queue = queue.Queue()
-consumer_queue = queue.Queue()
-
+# Globals
 last_fetched_time = None
 
-def producer_task():
-    global last_fetched_time
-    logger = logging.getLogger("producer")
-    # Get configs
+@st.cache_resource
+def initialize_and_cache_consumer_and_producer():
+    logger = logging.getLogger("main")
+    logger.debug(f"Initializing producer and consumer")
     kafka_config = KafkaConfig().config_dict()
 
+    # Producer stuff
     producer = setup_producer(kafka_config, serializer.serialize)
-    producer.flush()
+    producer_queue = queue.Queue()
+    producer_topic = kafka_config["topic"]
 
-    while True:
-        # Get data from API
-        symbols = ["AAPL", "GOOGL", "MSFT"]
-        filtered = filter_stock_data(symbols)
-        if filtered is not None:
-            data, last_fetched_time = filtered
-            logger.debug(f"last_fetched_time = {last_fetched_time}")
-        else:
-            data = filtered
-        
-        if data is not None and not data.empty:
-            for _, record in data.iterrows():
-                record_dict = record.to_dict()
-                producer.send(kafka_config["topic"], value=record_dict)
-                logger.debug(f"Produced record => {record_dict['Timestamp']} {record_dict['Symbol']}:: Open: {record_dict['Open']}, Low: {record_dict['Low']}, High: {record_dict['High']}, Close: {record_dict['Close']}, Volume: {record_dict['Volume']}")
-                producer_queue.put(record.to_dict())
-        else:
-            logger.debug(f"No new data to produce")
-
-        time.sleep(5) # Change to 1 hour pulls
-
-
-def consumer_task():
-    logger = logging.getLogger("consumer")
-    # Get configs
-    s3_config = S3Config().config_dict()
-    kafka_config = KafkaConfig().config_dict()
-
+    # Consumer stuff
     consumer = setup_consumer(kafka_config, deserializer.deserialize)
     consumer.subscribe([kafka_config["topic"]])
+    consumer_queue = queue.Queue()
+    logger.debug(f"Successfully set up producer and consumer artifacts")
+    return producer, producer_queue, producer_topic, consumer, consumer_queue
 
-    while True:
-        for message in consumer:
-            data = message.value
-            logger.debug(f"Consumed record: {data}")
-            push_to_cloud(s3_config, data["Symbol"], data["Timestamp"], data)
-            consumer_queue.put(data)
+
+def producer_task(producer, producer_queue: queue.Queue, topic: str):
+    try:
+        global last_fetched_time
+        logger = logging.getLogger("producer")
+        producer.flush()
+
+        while True:
+            # Get data from API
+            symbols = ["AAPL", "GOOGL", "MSFT"]
+            filtered = filter_stock_data(symbols, last_fetched_time)
+            if filtered is not None:
+                data, last_fetched_time = filtered
+            else:
+                data = filtered
+            
+            if data is not None and not data.empty:
+                for _, record in data.iterrows():
+                    record_dict = record.to_dict()
+                    producer.send(topic, value=record_dict)
+                    logger.debug(f"Produced record => {record_dict['Timestamp']} {record_dict['Symbol']}:: Open: {record_dict['Open']}, Low: {record_dict['Low']}, High: {record_dict['High']}, Close: {record_dict['Close']}, Volume: {record_dict['Volume']}")
+                    producer_queue.put(record.to_dict())
+            else:
+                logger.debug(f"No new data to produce")
+
+            time.sleep(5) # Change to 1 hour pulls
+    except Exception as e:
+        logger.error(e)
+
+
+def consumer_task(consumer, consumer_queue: queue.Queue):
+    try:
+        logger = logging.getLogger("consumer")
+
+        # Get configs
+        s3_config = S3Config().config_dict()
+
+        while True:
+            for message in consumer:
+                data = message.value
+                logger.debug(f"Consumed record: {data}")
+                push_to_cloud(s3_config, data["Symbol"], data["Timestamp"], data)
+                consumer_queue.put(data)
+    except ValueError as v:
+        logger.error(v)
+    except Exception as e:
+        logger.error(e)
 
 if __name__ == "__main__":
     logger = logging.getLogger("main")
-    # Run producer and consumer as separate threads
-    producer_thread = threading.Thread(target=producer_task, daemon=True)
-    consumer_thread = threading.Thread(target=consumer_task, daemon=True)
-    
-    # Start the threads
+
+    producer, producer_queue, producer_topic, consumer, consumer_queue = initialize_and_cache_consumer_and_producer()
+
+    producer_thread = threading.Thread(target=producer_task, args=(producer, producer_queue, producer_topic,), daemon=True)
     producer_thread.start()
+    
+    consumer_thread = threading.Thread(target=consumer_task, args=(consumer, consumer_queue,), daemon=True)
     consumer_thread.start()
     
     logger.debug("Producer and Consumer are running.")
