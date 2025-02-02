@@ -12,7 +12,7 @@ def setup_consumer(server_params: dict, value_deserializer: Callable[[bytes], an
             bootstrap_servers=f"{server_ip}:{server_port}",
             value_deserializer=lambda x: value_deserializer(x)
         )
-        logger.info(f"Consumer at {server_ip}:{server_port} setup successful")
+        logger.debug(f"Consumer at {server_ip}:{server_port} setup successful")
         return consumer
     except Exception as e:
         logger.error(e)
