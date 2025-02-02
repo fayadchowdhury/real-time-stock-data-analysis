@@ -1,10 +1,39 @@
-# Setting Up Kafka on EC2
+# Real-Time Stock Data Monitoring App
 
-## 1. Set Up the EC2 Instance
+This project is a monolithic application that fetches stock data using the `yfinance` API, processes it in real-time with Kafka, and provides a Streamlit-based UI for monitoring system health. The app runs as a service with the producer and consumer running on individual threads.
+
+## Installation and Running the App
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/fayadchowdhury/real-time-stock-data-analysis.git
+   cd real-time-stock-data-analysis
+   ```
+
+2. Install dependencies:
+   ```bash
+   poetry install --no-root
+   ```
+
+3. Run the Streamlit dashboard:
+   ```bash
+   poetry run streamlit run main.py
+   ```
+
+The Streamlit UI provides health checks including:
+- Last lines of the pull, push, consumer, and producer logs
+- Timestamp of the last fetched data
+- Last few records of fetched data
+
+---
+
+## Setting Up Kafka on EC2
+
+### 1. Set Up the EC2 Instance
 1. Set up an EC2 instance on the free tier.
 2. Log in using EC2 Connect.
 
-## 2. Install Prerequisites
+### 2. Install Prerequisites
 1. Install Amazon Corretto 11:
    ```bash
    sudo yum install java-11-amazon-corretto-headless
@@ -18,17 +47,16 @@
    tar -xvf kafka_2.12-3.7.2.tgz
    ```
 
-## 3. Configure Kafka
-1. Edit the `config/server.properties` file to update the `advertised.listeners` hostname to the EC2 public IP. *(Consider if this should be an Elastic IP for persistence.)*
+### 3. Configure Kafka
+Edit the `config/server.properties` file to update the `advertised.listeners` hostname to the EC2 public IP. *(Consider using an Elastic IP for persistence.)*
 
-## 4. Start Zookeeper
-### Option 1: Start Manually
-Run:
+### 4. Start Zookeeper
+#### Option 1: Start Manually
 ```bash
 <path-to-kafka-directory>/bin/zookeeper-server-start.sh config/zookeeper.properties
 ```
 
-### Option 2: Run as a Service
+#### Option 2: Run as a Service
 1. Create a Zookeeper service file:
    ```bash
    sudo nano /etc/systemd/system/zookeeper.service
@@ -58,8 +86,8 @@ Run:
    sudo systemctl enable zookeeper.service
    ```
 
-## 5. Start Kafka
-### Option 1: Start Manually
+### 5. Start Kafka
+#### Option 1: Start Manually
 1. Set the Kafka heap size:
    ```bash
    export KAFKA_HEAP_OPTS="-Xmx256M -Xms128M"
@@ -69,7 +97,7 @@ Run:
    <path-to-kafka-directory>/bin/kafka-server-start.sh config/server.properties
    ```
 
-### Option 2: Run as a Service
+#### Option 2: Run as a Service
 1. Create a Kafka service file:
    ```bash
    sudo nano /etc/systemd/system/kafka.service
@@ -102,63 +130,41 @@ Run:
 
 ---
 
-# Using Kafka
+## Using Kafka
 
-## 1. Create a Topic
-Run:
+### 1. Create a Topic
 ```bash
 <path-to-kafka-directory>/bin/kafka-topics.sh --create --topic topic --bootstrap-server ec2-public-ip:9092 --replication-factor 1 --partitions 1
 ```
 
-## 2. Create a Producer
-Run:
+### 2. Create a Producer
 ```bash
 <path-to-kafka-directory>/bin/kafka-console-producer.sh --topic topic --bootstrap-server ec2-public-ip:9092
 ```
-*(Consider creating a service for a producer that sends random data sampled from a dataset.)*
 
-## 3. Create a Consumer
-Run:
+### 3. Create a Consumer
 ```bash
 <path-to-kafka-directory>/bin/kafka-console-consumer.sh --topic topic --bootstrap-server ec2-public-ip:9092
 ```
 
 ---
 
-# Python Setup for Kafka Consumer and Producer
+## AWS Glue Integration
 
-## 1. Install Dependencies
-Install `kafka-python-ng` (compatible with Python 3.11+):
-```bash
-pip install kafka-python-ng
-```
-Put AWS IAM User access key ID, access key secret and S3 bucket name in .env file in project root
-
-## 2. Create a Producer
-- Develop a producer based on `experiments/kafka-producer.ipynb`.
-- The producer will sample a random row from the dataset every 5 seconds and push it to the Kafka topic stream.
-
-## 3. Create a Consumer
-- Develop a consumer based on `experiments/kafka-consumer.ipynb`.
-- The consumer will read data from the Kafka stream and push it to an S3 bucket (one file per record).
-
----
-
-# AWS Glue Integration
-
-## 1. Set Up Glue Crawler
+### 1. Set Up Glue Crawler
 1. Assign an IAM role to AWS Glue to access the S3 bucket.
 2. Create a database in Glue to store the crawled metadata.
-3. Set up a crawler to scan the S3 bucket and write metadata to the database.
+3. Set up a crawler to scan the S3 bucket based on metadata schema.
+4. Optionally set up ETL jobs such as getting rid of NULL values and saving as parquet files partitioned on ticker symbol etc.
 
-## 2. Query Data with Athena
+### 2. Query Data with Athena
 - Use AWS Athena to run SQL queries on the S3 data.
 - Specify an output location for query results in Athena settings.
 
 ---
 
-# Next Steps
-1. Convert the code into a monolithic application with an interface to connect to a stock API.
-2. Integrate with AWS QuickSight for dashboards and reporting.
-3. Explore Infrastructure-as-Code tools like Boto3 or Pulumi.
-4. Investigate using Confluent for managing the Kafka server.
+## Next Steps
+1. The app now connects to the `yfinance` API instead of AlphaVantage.
+2. Looking into PowerBI for visualization instead of QuickSight.
+3. Confluent wasn't necessary but may be revisited later.
+4. Exploring Infrastructure-as-Code (Boto3, Pulumi) in the future.
