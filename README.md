@@ -1,5 +1,3 @@
-# Real-Time Stock Data Monitoring App
-
 This project is a monolithic application that fetches stock data using the `yfinance` API, processes it in real-time with Kafka, and provides a Streamlit-based UI for monitoring system health. The app runs as a service with the producer and consumer running on individual threads.
 
 ## Installation and Running the App
