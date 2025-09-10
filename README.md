@@ -7,18 +7,15 @@ This project is a monolithic application that fetches stock data using the `yfin
 - AWS Glue + Athena integration for analytics
 
 ## Installation and Running the App
-
 1. Clone the repository:
    ```bash
    git clone https://github.com/fayadchowdhury/real-time-stock-data-analysis.git
    cd real-time-stock-data-analysis
    ```
-
 2. Install dependencies:
    ```bash
    poetry install --no-root
    ```
-
 3. Run the Streamlit dashboard:
    ```bash
    poetry run streamlit run main.py
