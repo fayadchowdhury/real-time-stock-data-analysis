@@ -29,8 +29,6 @@ The Streamlit UI provides health checks including:
 - Timestamp of the last fetched data
 - Last few records of fetched data
 
----
-
 ## Setting Up Kafka on EC2
 
 ### 1. Set Up the EC2 Instance
@@ -132,7 +130,7 @@ Edit the `config/server.properties` file to update the `advertised.listeners` ho
    sudo systemctl enable kafka.service
    ```
 
----
+
 
 ## Using Kafka
 
@@ -151,7 +149,7 @@ Edit the `config/server.properties` file to update the `advertised.listeners` ho
 <path-to-kafka-directory>/bin/kafka-console-consumer.sh --topic topic --bootstrap-server ec2-public-ip:9092
 ```
 
----
+
 
 ## AWS Glue Integration
 
@@ -165,7 +163,7 @@ Edit the `config/server.properties` file to update the `advertised.listeners` ho
 - Use AWS Athena to run SQL queries on the S3 data.
 - Specify an output location for query results in Athena settings.
 
----
+
 
 ## Next Steps
 1. The app now connects to the `yfinance` API instead of AlphaVantage.
